@@ -5,8 +5,7 @@
 {% block content %}
     <h1>Panel główny</h1>
     {% with total_images_created=request.user.images_created.count %}
-    <p>Witaj w panelu głównym. Dodałeś {{ total_images_created }} obraz
-        {{ total_images_created|pluralize:"ów" }}.</p>
+    <p>Witaj w panelu głównym. Dodałeś {{ total_images_created }} obraz{{ total_images_created|pluralize:"ów" }}.</p>
     {% endwith %}
     <p>Przeciągnij poniższy przycisk na pasek ulubionych. Zyskasz możliwość dodawania obrazów
         z innych witryn internetowych <a href="javascript:{% include "bookmarklet_launcher.js" %}"

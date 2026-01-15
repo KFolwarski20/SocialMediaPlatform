@@ -1,6 +1,6 @@
 (function(){
     let jquery_version = '3.4.1';
-    let site_url = 'http://127.0.0.1:8000/';
+    let site_url = 'https://127.0.0.1:8000/';
     let static_url = site_url + 'static/';
     let min_width = 100;
     let min_height = 100;
