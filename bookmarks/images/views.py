@@ -1,8 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.views.decorators.http import require_POST
+from common.decorators import ajax_required
 from .models import Image
 from .forms import ImageCreateForm
 
@@ -34,6 +36,7 @@ def image_detail(request, id, slug):
     return render(request, 'images/image/detail.html', {'section': 'images', 'image': image})
 
 
+@ajax_required
 @login_required
 @require_POST
 def image_like(request):
@@ -50,3 +53,26 @@ def image_like(request):
         except:
             pass
     return JsonResponse({'status': 'error'})
+
+
+@login_required
+def image_list(request):
+    images = Image.objects.all()
+    paginator = Paginator(images, 8)
+    page = request.GET.get('page')
+    try:
+        images = paginator.page(page)
+    except PageNotAnInteger:
+        # Jeżeli zmienna page nie jest liczbą całkowitą, wówczas pobierana jest pierwsza strona wyników
+        images = paginator.page(1)
+    except EmptyPage:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            # Jeżeli żądanie jest w technologii AJAX i zmienna page ma wartość spoza zakresu,
+            # wówczas zwracana jest pusta strona.
+            return HttpResponse('')
+        # Jeżeli zmienna page ma wartość większą niż numer ostatniej strony wyników, wtedy pobierana
+        # jest ostatnia strona wyników.
+        images = paginator.page(paginator.num_pages)
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return render(request, 'images/image/list_ajax.html', {'section': 'images', 'images': images})
+    return render(request, 'images/image/list.html', {'section': 'images', 'images': images})
