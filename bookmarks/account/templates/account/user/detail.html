@@ -6,13 +6,12 @@
 {% block content %}
     <h1>{{ user.get_full_name }}</h1>
     <div class="profile-info">
-        {% thumbnail user.profile.photo "180x180" crop="100%" as im %}
-            <img src="{{ im.url }}" class="user-detail">
+        <img src="{% thumbnail user.profile.photo "180x180" %}" class="user-detail">
     </div>
     {% with total_followers=user.followers.count %}
-        <span class="count"></span>
-        <span class="total">{{ total_followers }}
-        obserwujący{{ total_followers|pluralize:"ch" }}
+        <span class="count">
+            <span class="total">{{ total_followers }}</span>
+            obserwujący{{ total_followers|pluralize:"ch" }}
         </span>
         <a href="#" data-id="{{ user.id }}" data-action="{% if request.user in user.followers.all %}un{% endif %}follow" class="follow button">
             {% if request.user not in user.followers.all %}
@@ -25,4 +24,33 @@
             {% include "images/image/list_ajax.html" with images=user.images_created.all %}
         </div>
     {% endwith %}
+{% endblock %}
+
+{% block domready %}
+    $('a.follow').click(function(e){
+        e.preventDefault();
+    $.post('{% url "user_follow" %}',
+        {
+            id: $(this).data('id'),
+            action: $(this).data('action')
+        },
+        function(data){
+            if (data['status'] == 'ok') {
+                var previous_action = $('a.follow').data('action');
+
+                // Zmiana wartości data-action.
+                $('a.follow').data('action',
+                    previous_action == 'follow' ? 'unfollow' : 'follow');
+                // Zmiana tekstu wyświetlanego przez łącze.
+                $('a.follow').text(
+                    previous_action == 'follow' ? 'Nie obserwuj' : 'Obserwuj');
+
+                // Uaktualnienie całkowitej liczby użytkowników obserwujących dany profil.
+                var previous_followers = parseInt(
+                    $('span.count .total').text());
+                $('span.count .total').text(previous_action == 'follow' ? previous_followers + 1 : previous_followers - 1);
+            }
+        }
+    );
+});
 {% endblock %}
