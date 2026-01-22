@@ -7,6 +7,8 @@ from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from common.decorators import ajax_required
+from actions.utils import create_action
+from actions.models import Action
 from .forms import LoginForm, UserRegistrationForm, UserEditForm, ProfileEditForm
 from .models import Profile, Contact
 
@@ -32,7 +34,16 @@ def user_login(request):
 
 @login_required
 def dashboard(request):
-    return render(request, 'account/dashboard.html', {'section': dashboard})
+    # Domyślnie wyświetlane są wszystkie akcje.
+    actions = Action.objects.exclude(user=request.user)
+    following_ids = request.user.following.values_list('id', flat=True)
+    if following_ids:
+        # Jeżeli użytkownik obserwuje innych, będzie otrzymywał jedynie informacje
+        # o podejmowanych przez nich akcjach.
+        actions = actions.filter(user_id__in=following_ids)
+    actions = actions[:10]
+
+    return render(request, 'account/dashboard.html', {'section': dashboard, 'actions': actions})
 
 
 @login_required
@@ -65,6 +76,7 @@ def register(request):
             new_user.save()
             # Utworzenie profilu użytkownika
             Profile.objects.create(user=new_user)
+            create_action(new_user, 'utworzył konto')
             return render(request, 'account/register_done.html', {'new_user': new_user})
     else:
         user_form = UserRegistrationForm()
@@ -94,6 +106,7 @@ def user_follow(request):
             user = User.objects.get(id=user_id)
             if action == 'follow':
                 Contact.objects.get_or_create(user_from=request.user, user_to=user)
+                create_action(request.user, 'obserwuje', user)
             else:
                 Contact.objects.filter(user_from=request.user, user_to=user).delete()
             return JsonResponse({'status': 'ok'})
