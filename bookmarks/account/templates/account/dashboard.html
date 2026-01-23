@@ -12,4 +12,10 @@
                                          class="button">Dodaj obraz</a></p>
     <p>Możesz <a href="{% url "edit" %}">edytować profil</a> lub
         <a href="{% url "password_change" %}">zmienić hasło</a>.</p>
+    <h2>Co nowego?</h2>
+    <div id="action-list">
+        {% for action in actions %}
+            {% include "actions/action/detail.html" %}
+        {% endfor %}
+    </div>
 {% endblock %}
