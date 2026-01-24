@@ -10,9 +10,9 @@
 {% endblock %}
 
 {% block domready %}
-    var page = 1;
-    var empty_page = false;
-    var block_request = false;
+    let page = 1;
+    let empty_page = false;
+    let block_request = false;
 
     $(window).scroll(function() {
         var margin = $(document).height() - $(window).height() - 200;

@@ -1,10 +1,10 @@
-from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.http import JsonResponse
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
 from common.decorators import ajax_required
 from actions.utils import create_action
@@ -41,7 +41,21 @@ def dashboard(request):
         # Jeżeli użytkownik obserwuje innych, będzie otrzymywał jedynie informacje
         # o podejmowanych przez nich akcjach.
         actions = actions.filter(user_id__in=following_ids)
-    actions = actions.select_related('user', 'user__profile').prefetch_related('target')[:10]
+    actions = actions.select_related('user', 'user__profile').prefetch_related('target')
+    paginator = Paginator(actions, 10)
+    page = request.GET.get('page')
+
+    try:
+        actions = paginator.page(page)
+    except PageNotAnInteger:
+        actions = paginator.page(1)
+    except EmptyPage:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return HttpResponse('')
+        actions = paginator.page(paginator.num_pages)
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return render(request, 'actions/action/list_ajax.html', {'actions': actions})
 
     return render(request, 'account/dashboard.html', {'section': dashboard, 'actions': actions})
 
